@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SIGNAL">
+<meta name="theme-color" content="#080808">
+<link rel="manifest" href="manifest.json">
+<title>SIGNAL</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #080808;
+  --s1: #0f0f0f;
+  --s2: #161616;
+  --border: #222;
+  --border2: #2e2e2e;
+  --accent: #c8f060;
+  --accent2: #60c8f0;
+  --text: #efefef;
+  --muted: #555;
+  --dim: #333;
+  --danger: #f06060;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html,body { height:100%; background:var(--bg); color:var(--text); font-family:'DM Sans',sans-serif; overflow:hidden; }
+
+/* ── SCREENS ── */
+.screen {
+position:fixed; inset:0;
+display:flex; flex-direction:column;
+opacity:0; pointer-events:none;
+transition:opacity 0.3s ease;
+overflow-y:auto; -webkit-overflow-scrolling:touch;
+}
+.screen.active { opacity:1; pointer-events:all; }
+
+/* ── SPLASH ── */
+#splash { align-items:center; justify-content:center; gap:10px; }
+.splash-logo {
+font-family:‘Bebas Neue’,sans-serif; font-size:86px;
+letter-spacing:18px; color:var(–accent);
+text-shadow:0 0 60px rgba(200,240,96,0.5);
+animation:glow 2s ease-in-out infinite;
+}
+@keyframes glow {
+0%,100% { text-shadow:0 0 60px rgba(200,240,96,0.4); }
+50% { text-shadow:0 0 100px rgba(200,240,96,0.8); }
+}
+.splash-sub { font-size:11px; letter-spacing:6px; text-transform:uppercase; color:var(–muted); }
+
+/* ── HOME ── */
+#home { padding:calc(var(–safe-top) + 20px) 20px calc(var(–safe-bottom) + 24px); gap:20px; }
+
+.home-header {
+display:flex; align-items:flex-start; justify-content:space-between;
+}
+.logo { font-family:‘Bebas Neue’,sans-serif; font-size:28px; letter-spacing:8px; color:var(–accent); }
+
+/* Prompt box */
+.prompt-section { display:flex; flex-direction:column; gap:10px; }
+.field-label { font-size:10px; letter-spacing:4px; text-transform:uppercase; color:var(–muted); }
+
+.prompt-box {
+width:100%; background:var(–s2); border:1px solid var(–border);
+border-radius:14px; padding:16px; color:var(–text);
+font-family:‘DM Sans’,sans-serif; font-size:16px; line-height:1.6;
+outline:none; resize:none; min-height:110px;
+transition:border-color 0.2s; -webkit-appearance:none;
+}
+.prompt-box:focus { border-color:var(–accent); }
+.prompt-box::placeholder { color:var(–muted); }
+
+/* Duration */
+.duration-section { display:flex; flex-direction:column; gap:10px; }
+.duration-row { display:flex; align-items:center; gap:12px; }
+.duration-display {
+font-family:‘Bebas Neue’,sans-serif; font-size:32px;
+letter-spacing:2px; color:var(–accent); min-width:80px;
+}
+.duration-unit { font-size:12px; color:var(–muted); letter-spacing:2px; text-transform:uppercase; margin-top:4px; }
+
+.slider-wrap { flex:1; }
+input[type=range] {
+-webkit-appearance:none; appearance:none;
+width:100%; height:3px; border-radius:100px;
+background:linear-gradient(to right, var(–accent) 0%, var(–accent) var(–pct,16.7%), var(–border) var(–pct,16.7%), var(–border) 100%);
+outline:none; cursor:pointer;
+}
+input[type=range]::-webkit-slider-thumb {
+-webkit-appearance:none; appearance:none;
+width:22px; height:22px; border-radius:50%;
+background:var(–accent); border:2px solid var(–bg);
+box-shadow:0 0 10px rgba(200,240,96,0.4);
+}
+input[type=range]::-moz-range-thumb {
+width:22px; height:22px; border-radius:50%;
+background:var(–accent); border:2px solid var(–bg); cursor:pointer;
+}
+
+.duration-presets { display:flex; gap:6px; }
+.preset-btn {
+flex:1; padding:8px 4px; background:var(–s2); border:1px solid var(–border);
+border-radius:8px; color:var(–muted); font-size:12px; font-family:‘DM Sans’,sans-serif;
+cursor:pointer; transition:all 0.2s; letter-spacing:1px; text-align:center;
+}
+.preset-btn.active { border-color:var(–accent); color:var(–accent); background:rgba(200,240,96,0.06); }
+.preset-btn:active { transform:scale(0.96); }
+
+/* Generate button */
+.btn-generate {
+width:100%; padding:18px; background:var(–accent); border:none;
+border-radius:14px; color:#080808; font-family:‘Bebas Neue’,sans-serif;
+font-size:22px; letter-spacing:4px; cursor:pointer;
+transition:transform 0.15s, opacity 0.15s; -webkit-appearance:none;
+}
+.btn-generate:active { transform:scale(0.98); opacity:0.9; }
+.btn-generate:disabled { opacity:0.35; }
+
+/* Saved prompts */
+.saved-section { display:flex; flex-direction:column; gap:10px; }
+.saved-empty { text-align:center; padding:20px 0; color:var(–muted); font-size:13px; }
+
+.prompt-item {
+background:var(–s1); border:1px solid var(–border); border-radius:12px;
+padding:14px; display:flex; align-items:center; gap:12px; cursor:pointer;
+transition:border-color 0.2s;
+}
+.prompt-item:active { border-color:var(–border2); }
+.prompt-item-info { flex:1; min-width:0; }
+.prompt-item-text {
+font-size:14px; color:var(–text); white-space:nowrap;
+overflow:hidden; text-overflow:ellipsis; margin-bottom:3px;
+}
+.prompt-item-meta { font-size:11px; color:var(–muted); letter-spacing:1px; }
+.prompt-item-arrow { color:var(–muted); font-size:18px; flex-shrink:0; }
+.prompt-item-del {
+background:transparent; border:none; color:var(–muted);
+font-size:18px; cursor:pointer; padding:4px; flex-shrink:0;
+transition:color 0.2s;
+}
+.prompt-item-del:active { color:var(–danger); }
+
+/* ── GENERATING ── */
+#generating { align-items:center; justify-content:center; gap:20px; }
+.gen-logo { font-family:‘Bebas Neue’,sans-serif; font-size:52px; letter-spacing:12px; color:var(–accent); }
+.gen-msg { font-size:12px; letter-spacing:3px; text-transform:uppercase; color:var(–muted); text-align:center; padding:0 30px; }
+.gen-bar-wrap { width:200px; height:2px; background:var(–border); border-radius:100px; overflow:hidden; }
+.gen-bar { height:100%; background:linear-gradient(90deg,var(–accent),var(–accent2)); border-radius:100px; width:0%; transition:width 0.5s ease; }
+.gen-detail { font-size:11px; color:var(–dim); letter-spacing:2px; }
+
+/* ── PLAYER ── */
+#player { padding:calc(var(–safe-top) + 16px) 0 calc(var(–safe-bottom) + 12px); }
+
+.player-header { display:flex; align-items:center; justify-content:space-between; padding:0 20px; margin-bottom:16px; }
+.btn-home {
+background:var(–s2); border:1px solid var(–border); border-radius:10px;
+width:38px; height:38px; display:flex; align-items:center; justify-content:center;
+cursor:pointer; color:var(–muted); transition:all 0.2s;
+}
+.btn-home:active { background:var(–dim); color:var(–text); }
+.btn-home svg { width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:2; }
+
+/* Prompt pill */
+.prompt-pill {
+margin:0 20px 14px; background:var(–s2); border:1px solid var(–border);
+border-radius:10px; padding:10px 14px; font-size:12px; color:var(–muted);
+line-height:1.5; max-height:60px; overflow:hidden;
+mask-image:linear-gradient(to bottom, black 60%, transparent 100%);
+-webkit-mask-image:linear-gradient(to bottom, black 60%, transparent 100%);
+}
+
+/* Wave card */
+.wave-card {
+margin:0 16px; background:var(–s1); border:1px solid var(–border);
+border-radius:18px; padding:20px 18px 16px; position:relative; overflow:hidden;
+}
+.wave-glow {
+position:absolute; top:0; left:0; right:0; height:1px;
+background:linear-gradient(90deg, transparent, var(–accent), transparent);
+opacity:0; transition:opacity 0.4s;
+}
+.wave-card.playing .wave-glow { opacity:1; }
+
+.wave-num { font-size:10px; letter-spacing:4px; text-transform:uppercase; color:var(–muted); margin-bottom:6px; }
+.wave-title {
+font-family:‘Bebas Neue’,sans-serif; font-size:28px; letter-spacing:2px;
+color:var(–text); line-height:1.05; margin-bottom:12px;
+}
+.wave-title em { color:var(–accent); font-style:normal; }
+
+.wave-prog-wrap { background:var(–border); height:2px; border-radius:100px; margin-bottom:12px; overflow:hidden; }
+.wave-prog { height:100%; background:linear-gradient(90deg,var(–accent),var(–accent2)); border-radius:100px; width:0%; transition:width 0.3s linear; }
+
+.wave-text {
+font-size:13px; line-height:1.9; color:var(–muted); max-height:88px; overflow:hidden;
+mask-image:linear-gradient(to bottom, black 40%, transparent 100%);
+-webkit-mask-image:linear-gradient(to bottom, black 40%, transparent 100%);
+}
+.wave-text .hl { color:var(–text); font-weight:500; }
+
+.loading-dots { display:flex; gap:5px; align-items:center; justify-content:center; min-height:60px; }
+.ldot { width:7px; height:7px; border-radius:50%; background:var(–accent); animation:lb 1.1s ease-in-out infinite; }
+.ldot:nth-child(2) { animation-delay:0.15s; }
+.ldot:nth-child(3) { animation-delay:0.3s; }
+@keyframes lb { 0%,80%,100% { transform:scale(0.4); opacity:0.2; } 40% { transform:scale(1); opacity:1; } }
+
+/* Status */
+.status-row { display:flex; align-items:center; justify-content:center; gap:7px; padding:10px 20px 2px; }
+.sdot { width:6px; height:6px; border-radius:50%; background:var(–muted); transition:background 0.3s; }
+.sdot.active { background:var(–accent); animation:sb 1.3s ease-in-out infinite; }
+@keyframes sb { 0%,100% { opacity:1; } 50% { opacity:0.15; } }
+.stext { font-size:10px; letter-spacing:3px; text-transform:uppercase; color:var(–muted); }
+
+.err-banner {
+margin:6px 16px 0; background:rgba(240,96,96,0.1); border:1px solid rgba(240,96,96,0.3);
+border-radius:10px; padding:9px 13px; font-size:12px; color:var(–danger); display:none;
+}
+
+/* Controls */
+.controls { display:flex; align-items:center; justify-content:center; gap:14px; padding:10px 20px; }
+.btn-ctrl {
+background:var(–s2); border:1px solid var(–border); border-radius:12px;
+width:50px; height:50px; display:flex; align-items:center; justify-content:center;
+cursor:pointer; transition:all 0.15s; color:var(–text);
+}
+.btn-ctrl:active { transform:scale(0.93); }
+.btn-ctrl svg { width:18px; height:18px; fill:currentColor; }
+.btn-ctrl.on { border-color:var(–accent); color:var(–accent); }
+
+.btn-play {
+width:68px; height:68px; border-radius:50%; background:var(–accent); border:none;
+display:flex; align-items:center; justify-content:center; cursor:pointer;
+box-shadow:0 0 24px rgba(200,240,96,0.3); transition:all 0.15s;
+}
+.btn-play:active { transform:scale(0.95); }
+.btn-play svg { width:26px; height:26px; fill:#080808; }
+
+/* Speed */
+.speed-row { display:flex; align-items:center; justify-content:center; gap:5px; padding:2px 20px 6px; }
+.speed-lbl { font-size:10px; letter-spacing:3px; color:var(–muted); text-transform:uppercase; margin-right:3px; }
+.spd {
+background:transparent; border:1px solid var(–border); border-radius:7px;
+padding:4px 8px; font-size:11px; color:var(–muted); cursor:pointer;
+font-family:‘DM Sans’,sans-serif; transition:all 0.2s;
+}
+.spd.active { border-color:var(–accent); color:var(–accent); }
+
+/* Wave dots */
+.wdots { display:flex; gap:6px; justify-content:center; flex-wrap:wrap; padding:6px 20px; }
+.wd { width:7px; height:7px; border-radius:50%; background:var(–border); cursor:pointer; transition:all 0.2s; }
+.wd.done { background:var(–dim); }
+.wd.now { background:var(–accent); transform:scale(1.5); }
+.wd.ready { background:var(–border2); }
+
+/* Footer */
+.player-footer { display:flex; justify-content:space-between; padding:6px 20px 0; font-size:11px; color:var(–muted); letter-spacing:1px; }
+</style>
+
+</head>
+<body>
+
+<!-- SPLASH -->
+
+<div class="screen active" id="splash">
+  <div class="splash-logo">SIGNAL</div>
+  <div class="splash-sub">Type it. Hear it. Become it.</div>
+</div>
+
+<!-- HOME -->
+
+<div class="screen" id="home">
+  <div class="home-header">
+    <div class="logo">SIGNAL</div>
+  </div>
+
+  <!-- Prompt input -->
+
+  <div class="prompt-section">
+    <span class="field-label">What do you want to work on?</span>
+    <textarea
+      class="prompt-box"
+      id="prompt-box"
+      placeholder="Type anything. What you're building, what you're working through, what you need to hear right now, where your head is at..."
+      rows="4"
+    ></textarea>
+  </div>
+
+  <!-- Duration -->
+
+  <div class="duration-section">
+    <span class="field-label">Session Length</span>
+    <div class="duration-row">
+      <div>
+        <div class="duration-display" id="dur-display">10</div>
+        <div class="duration-unit">min</div>
+      </div>
+      <div class="slider-wrap">
+        <input type="range" id="dur-slider" min="5" max="60" value="10" step="5">
+      </div>
+    </div>
+    <div class="duration-presets">
+      <button class="preset-btn" onclick="setDuration(5)">5m</button>
+      <button class="preset-btn active" onclick="setDuration(10)">10m</button>
+      <button class="preset-btn" onclick="setDuration(20)">20m</button>
+      <button class="preset-btn" onclick="setDuration(30)">30m</button>
+      <button class="preset-btn" onclick="setDuration(45)">45m</button>
+      <button class="preset-btn" onclick="setDuration(60)">1hr</button>
+    </div>
+  </div>
+
+  <!-- Generate -->
+
+<button class="btn-generate" id="btn-gen" onclick="generate()">⚡ GENERATE SESSION</button>
+
+  <!-- Saved prompts -->
+
+  <div class="saved-section">
+    <span class="field-label">Saved Prompts</span>
+    <div id="saved-list"><div class="saved-empty">Your prompts will appear here after your first session.</div></div>
+  </div>
+</div>
+
+<!-- GENERATING -->
+
+<div class="screen" id="generating">
+  <div class="gen-logo">SIGNAL</div>
+  <div class="gen-msg" id="gen-msg">Writing your session...</div>
+  <div class="gen-bar-wrap"><div class="gen-bar" id="gen-bar"></div></div>
+  <div class="gen-detail" id="gen-detail"></div>
+</div>
+
+<!-- PLAYER -->
+
+<div class="screen" id="player">
+  <div class="player-header">
+    <div class="logo">SIGNAL</div>
+    <button class="btn-home" onclick="goHome()">
+      <svg viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    </button>
+  </div>
+
+  <div class="prompt-pill" id="player-prompt"></div>
+
+  <div class="wave-card" id="wave-card">
+    <div class="wave-glow"></div>
+    <div class="wave-num" id="wave-num">WAVE 1</div>
+    <div class="wave-title" id="wave-title">—</div>
+    <div class="wave-prog-wrap"><div class="wave-prog" id="wave-prog"></div></div>
+    <div class="wave-text" id="wave-text">
+      <div class="loading-dots"><div class="ldot"></div><div class="ldot"></div><div class="ldot"></div></div>
+    </div>
+  </div>
+
+  <div class="status-row">
+    <div class="sdot" id="sdot"></div>
+    <div class="stext" id="stext">READY</div>
+  </div>
+
+  <div class="err-banner" id="err-banner"></div>
+
+  <div class="controls">
+    <button class="btn-ctrl" onclick="prevWave()">
+      <svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg>
+    </button>
+    <button class="btn-play" id="btn-play" onclick="togglePlay()">
+      <svg id="play-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+    </button>
+    <button class="btn-ctrl" onclick="nextWave()">
+      <svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+    </button>
+  </div>
+
+  <div class="speed-row">
+    <span class="speed-lbl">Speed</span>
+    <button class="spd" onclick="setSpeed(0.85,this)">0.85x</button>
+    <button class="spd active" onclick="setSpeed(1.0,this)">1x</button>
+    <button class="spd" onclick="setSpeed(1.15,this)">1.15x</button>
+    <button class="spd" onclick="setSpeed(1.3,this)">1.3x</button>
+  </div>
+
+  <div class="wdots" id="wdots"></div>
+
+  <div class="player-footer">
+    <span id="footer-dur">— min session</span>
+    <button class="btn-ctrl on" id="btn-loop" onclick="toggleLoop()" style="width:auto;height:auto;padding:4px 10px;font-size:11px;letter-spacing:2px;border-radius:7px;color:var(--muted);border-color:var(--border);">LOOP OFF</button>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// CONFIG — update API_BASE after deploying backend
+// ============================================================
+const API_BASE = window.location.hostname === 'localhost'
+  ? 'http://localhost:3001'
+  : 'https://signal-api-production-bc96.up.railway.app';
+
+// ============================================================
+// STATE
+// ============================================================
+let waves = [];
+let audioCache = {};
+let currentWave = 0;
+let isPlaying = false;
+let isLooping = false;
+let playbackRate = 1.0;
+let currentAudio = null;
+let currentPrompt = '';
+let currentMinutes = 10;
+let savedPrompts = [];
+
+// ============================================================
+// STORAGE
+// ============================================================
+function save(k, v) { try { localStorage.setItem('signal_' + k, JSON.stringify(v)); } catch(e) {} }
+function load(k) { try { const v = localStorage.getItem('signal_' + k); return v ? JSON.parse(v) : null; } catch(e) { return null; } }
+
+// ============================================================
+// INIT
+// ============================================================
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    savedPrompts = load('prompts') || [];
+    renderSaved();
+    updateSliderFill();
+    showScreen('home');
+  }, 1600);
+});
+
+// ============================================================
+// SCREEN
+// ============================================================
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (id === 'home') renderSaved();
+}
+
+// ============================================================
+// DURATION
+// ============================================================
+const slider = document.getElementById('dur-slider');
+const durDisplay = document.getElementById('dur-display');
+
+function setDuration(val) {
+  currentMinutes = val;
+  slider.value = val;
+  durDisplay.textContent = val < 60 ? val : '60';
+  updateSliderFill();
+  document.querySelectorAll('.preset-btn').forEach(b => {
+    b.classList.toggle('active', parseInt(b.textContent) === val || (b.textContent === '1hr' && val === 60));
+  });
+}
+
+function updateSliderFill() {
+  const min = parseInt(slider.min), max = parseInt(slider.max), val = parseInt(slider.value);
+  const pct = ((val - min) / (max - min)) * 100;
+  slider.style.setProperty('--pct', pct + '%');
+  durDisplay.textContent = val;
+  currentMinutes = val;
+}
+
+slider.addEventListener('input', () => {
+  updateSliderFill();
+  document.querySelectorAll('.preset-btn').forEach(b => {
+    const bVal = b.textContent === '1hr' ? 60 : parseInt(b.textContent);
+    b.classList.toggle('active', bVal === currentMinutes);
+  });
+});
+
+// ============================================================
+// SAVED PROMPTS
+// ============================================================
+function savePrompt(text, minutes) {
+  const existing = savedPrompts.findIndex(p => p.text === text);
+  if (existing !== -1) savedPrompts.splice(existing, 1);
+
+  savedPrompts.unshift({ text, minutes, date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), id: Date.now() });
+  if (savedPrompts.length > 20) savedPrompts = savedPrompts.slice(0, 20);
+  save('prompts', savedPrompts);
+}
+
+function deletePrompt(id, e) {
+  e.stopPropagation();
+  savedPrompts = savedPrompts.filter(p => p.id !== id);
+  save('prompts', savedPrompts);
+  renderSaved();
+}
+
+function loadPrompt(p) {
+  document.getElementById('prompt-box').value = p.text;
+  setDuration(p.minutes || 10);
+  window.scrollTo(0, 0);
+}
+
+function renderSaved() {
+  const el = document.getElementById('saved-list');
+  if (!savedPrompts.length) {
+    el.innerHTML = '<div class="saved-empty">Your prompts will appear here after your first session.</div>';
+    return;
+  }
+  el.innerHTML = savedPrompts.map(p => `
+    <div class="prompt-item" onclick="loadPrompt(${JSON.stringify(p).replace(/"/g, '&quot;')})">
+      <div class="prompt-item-info">
+        <div class="prompt-item-text">${p.text}</div>
+        <div class="prompt-item-meta">${p.date} · ${p.minutes || 10}min</div>
+      </div>
+      <button class="prompt-item-del" onclick="deletePrompt(${p.id}, event)">×</button>
+      <div class="prompt-item-arrow">›</div>
+    </div>
+  `).join('');
+}
+
+// ============================================================
+// GENERATE
+// ============================================================
+async function generate() {
+  const prompt = document.getElementById('prompt-box').value.trim();
+  if (!prompt) { document.getElementById('prompt-box').focus(); return; }
+
+  currentPrompt = prompt;
+  waves = [];
+  audioCache = {};
+  currentWave = 0;
+  isPlaying = false;
+
+  showScreen('generating');
+  setGen('Writing your session...', 10, '');
+
+  try {
+    const res = await fetch(`${API_BASE}/api/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt, minutes: currentMinutes })
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    waves = data.waves;
+
+    setGen(`${waves.length} waves generated. Synthesizing first wave...`, 50, `~${currentMinutes} min · ${waves.length} waves`);
+
+    await synthesize(0);
+    setGen('Loading player...', 88, '');
+
+    // Rest synthesize in parallel background
+    synthesizeAll();
+
+    savePrompt(prompt, currentMinutes);
+
+    setGen('Ready.', 100, '');
+    setTimeout(() => {
+      setupPlayer();
+      showScreen('player');
+    }, 400);
+
+  } catch (err) {
+    console.error(err);
+    setGen('Something went wrong. Check your connection.', 0, '');
+    setTimeout(() => showScreen('home'), 2500);
+  }
+}
+
+function setGen(msg, pct, detail) {
+  document.getElementById('gen-msg').textContent = msg;
+  document.getElementById('gen-bar').style.width = pct + '%';
+  document.getElementById('gen-detail').textContent = detail;
+}
+
+async function synthesize(i) {
+  if (audioCache[i] || !waves[i]) return;
+  try {
+    const res = await fetch(`${API_BASE}/api/synthesize`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: waves[i].content })
+    });
+    if (!res.ok) throw new Error(`synth ${res.status}`);
+    const d = await res.json();
+    audioCache[i] = `data:${d.mimeType};base64,${d.audio}`;
+    updateDots();
+  } catch (e) {
+    console.error(`Wave ${i} synth error:`, e);
+  }
+}
+
+async function synthesizeAll() {
+  await Promise.all(waves.slice(1).map((_, i) => synthesize(i + 1)));
+}
+
+// ============================================================
+// PLAYER SETUP
+// ============================================================
+function setupPlayer() {
+  document.getElementById('player-prompt').textContent = currentPrompt;
+  document.getElementById('footer-dur').textContent = `~${currentMinutes} min session`;
+  renderDots();
+  loadWaveDisplay(0);
+  setPlayBtn(false);
+}
+
+function loadWaveDisplay(i) {
+  currentWave = i;
+  const w = waves[i];
+  if (!w) return;
+
+  document.getElementById('wave-num').textContent = `WAVE ${i + 1} OF ${waves.length}`;
+  const words = w.title.split(' ');
+  const last = words.pop();
+  document.getElementById('wave-title').innerHTML = words.length ? `${words.join(' ')} <em>${last}</em>` : `<em>${last}</em>`;
+  document.getElementById('wave-prog').style.width = '0%';
+
+  if (audioCache[i]) {
+    document.getElementById('wave-text').innerHTML = `<span class="hl">${w.content.substring(0, 130)}...</span>`;
+  } else {
+    document.getElementById('wave-text').innerHTML = '<div class="loading-dots"><div class="ldot"></div><div class="ldot"></div><div class="ldot"></div></div>';
+  }
+  updateDots();
+}
+
+// ============================================================
+// PLAYBACK
+// ============================================================
+async function playWave(i) {
+  if (currentAudio) { currentAudio.pause(); currentAudio.src = ''; currentAudio = null; }
+
+  loadWaveDisplay(i);
+  document.getElementById('wave-card').classList.remove('playing');
+
+  if (!audioCache[i]) {
+    setStatus('LOADING...', false);
+    await waitFor(i);
+  }
+
+  if (!audioCache[i]) {
+    showErr('Audio unavailable — skipping...');
+    if (isPlaying && i < waves.length - 1) setTimeout(() => playWave(i + 1), 1200);
+    return;
+  }
+
+  const audio = new Audio(audioCache[i]);
+  audio.playbackRate = playbackRate;
+  currentAudio = audio;
+
+  // Media Session for lock screen controls
+  if ('mediaSession' in navigator) {
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: waves[i]?.title || 'SIGNAL',
+      artist: currentPrompt.substring(0, 60),
+      album: 'SIGNAL'
+    });
+    navigator.mediaSession.setActionHandler('play', () => { if (!isPlaying) togglePlay(); });
+    navigator.mediaSession.setActionHandler('pause', () => { if (isPlaying) togglePlay(); });
+    navigator.mediaSession.setActionHandler('nexttrack', () => nextWave());
+    navigator.mediaSession.setActionHandler('previoustrack', () => prevWave());
+  }
+
+  document.getElementById('wave-card').classList.add('playing');
+
+  audio.addEventListener('timeupdate', () => {
+    if (audio.duration) {
+      document.getElementById('wave-prog').style.width = ((audio.currentTime / audio.duration) * 100) + '%';
+    }
+  });
+
+  audio.addEventListener('ended', () => {
+    document.getElementById('wave-card').classList.remove('playing');
+    if (!isPlaying) return;
+    if (i < waves.length - 1) {
+      playWave(i + 1);
+    } else if (isLooping) {
+      playWave(0);
+    } else {
+      isPlaying = false;
+      setPlayBtn(false);
+      setStatus('COMPLETE', false);
+    }
+  });
+
+  audio.addEventListener('error', () => {
+    if (isPlaying && i < waves.length - 1) setTimeout(() => playWave(i + 1), 800);
+  });
+
+  try {
+    await audio.play();
+    setStatus('PLAYING', true);
+    setPlayBtn(true);
+  } catch (err) {
+    showErr('Tap play to start audio.');
+    isPlaying = false;
+    setPlayBtn(false);
+    document.getElementById('wave-card').classList.remove('playing');
+  }
+}
+
+async function waitFor(i, ms = 30000) {
+  const t = Date.now();
+  while (!audioCache[i] && Date.now() - t < ms) await new Promise(r => setTimeout(r, 400));
+}
+
+async function togglePlay() {
+  if (!waves.length) return;
+  if (isPlaying) {
+    isPlaying = false;
+    if (currentAudio) currentAudio.pause();
+    setPlayBtn(false);
+    setStatus('PAUSED', false);
+    document.getElementById('wave-card').classList.remove('playing');
+    if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
+  } else {
+    isPlaying = true;
+    if (currentAudio && currentAudio.paused && currentAudio.src) {
+      currentAudio.play();
+      setStatus('PLAYING', true);
+      setPlayBtn(true);
+      document.getElementById('wave-card').classList.add('playing');
+      if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
+    } else {
+      playWave(currentWave);
+    }
+  }
+}
+
+function nextWave() {
+  if (currentWave < waves.length - 1) {
+    if (isPlaying) playWave(currentWave + 1);
+    else loadWaveDisplay(currentWave + 1);
+  }
+}
+
+function prevWave() {
+  if (currentWave > 0) {
+    if (isPlaying) playWave(currentWave - 1);
+    else loadWaveDisplay(currentWave - 1);
+  }
+}
+
+function toggleLoop() {
+  isLooping = !isLooping;
+  const btn = document.getElementById('btn-loop');
+  btn.textContent = isLooping ? 'LOOP ON' : 'LOOP OFF';
+  btn.style.borderColor = isLooping ? 'var(--accent)' : 'var(--border)';
+  btn.style.color = isLooping ? 'var(--accent)' : 'var(--muted)';
+}
+
+function setSpeed(rate, btn) {
+  playbackRate = rate;
+  if (currentAudio) currentAudio.playbackRate = rate;
+  document.querySelectorAll('.spd').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function goHome() {
+  if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+  isPlaying = false;
+  showScreen('home');
+}
+
+// ============================================================
+// UI HELPERS
+// ============================================================
+function setPlayBtn(playing) {
+  document.getElementById('play-icon').innerHTML = playing
+    ? '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>'
+    : '<path d="M8 5v14l11-7z"/>';
+}
+
+function setStatus(txt, active) {
+  document.getElementById('stext').textContent = txt;
+  document.getElementById('sdot').classList.toggle('active', active);
+}
+
+function showErr(msg) {
+  const el = document.getElementById('err-banner');
+  el.textContent = msg; el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 3000);
+}
+
+function renderDots() {
+  const c = document.getElementById('wdots');
+  c.innerHTML = '';
+  waves.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'wd' + (i === currentWave ? ' now' : i < currentWave ? ' done' : audioCache[i] ? ' ready' : '');
+    d.onclick = () => { if (isPlaying) playWave(i); else loadWaveDisplay(i); };
+    c.appendChild(d);
+  });
+}
+
+function updateDots() {
+  document.querySelectorAll('.wd').forEach((d, i) => {
+    d.className = 'wd' + (i === currentWave ? ' now' : i < currentWave ? ' done' : audioCache[i] ? ' ready' : '');
+  });
+}
+</script>
+
+</body>
+</html>
