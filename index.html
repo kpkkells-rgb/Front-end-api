@@ -519,6 +519,25 @@ function renderSaved() {
 // ============================================================
 // GENERATE
 // ============================================================
+async function fetchWithTimeout(url, options, timeout = 90000) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
+  try {
+    const res = await fetch(url, { ...options, signal: controller.signal });
+    clearTimeout(id);
+    return res;
+  } catch (err) {
+    clearTimeout(id);
+    throw err;
+  }
+}
+
+async function wakeServer() {
+  try {
+    await fetchWithTimeout(`${API_BASE}/health`, {}, 60000);
+  } catch(e) {}
+}
+
 async function generate() {
   const prompt = document.getElementById('prompt-box').value.trim();
   if (!prompt) { document.getElementById('prompt-box').focus(); return; }
@@ -530,14 +549,18 @@ async function generate() {
   isPlaying = false;
 
   showScreen('generating');
-  setGen('Writing your session...', 10, '');
+  setGen('Waking up server...', 5, 'This may take 30-60 seconds on first use');
+
+  await wakeServer();
+
+  setGen('Writing your session...', 15, '');
 
   try {
-    const res = await fetch(`${API_BASE}/api/generate`, {
+    const res = await fetchWithTimeout(`${API_BASE}/api/generate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ prompt, minutes: currentMinutes })
-    });
+    }, 120000);
     if (!res.ok) throw new Error(await res.text());
     const data = await res.json();
     waves = data.waves;
@@ -574,11 +597,11 @@ function setGen(msg, pct, detail) {
 async function synthesize(i) {
   if (audioCache[i] || !waves[i]) return;
   try {
-    const res = await fetch(`${API_BASE}/api/synthesize`, {
+    const res = await fetchWithTimeout(`${API_BASE}/api/synthesize`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: waves[i].content })
-    });
+    }, 60000);
     if (!res.ok) throw new Error(`synth ${res.status}`);
     const d = await res.json();
     audioCache[i] = `data:${d.mimeType};base64,${d.audio}`;
